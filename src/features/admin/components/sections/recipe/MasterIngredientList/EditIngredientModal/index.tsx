@@ -22,45 +22,15 @@ export const EditIngredientModal: React.FC<EditIngredientModalProps> = ({
   ingredient,
   onSave
 }) => {
-  // Diagnostic Text
-  const diagnosticPath = "src/features/admin/components/sections/recipe/MasterIngredientList/EditIngredientModal/index.tsx";
-
   const [formData, setFormData] = useState<MasterIngredient>(ingredient);
   const [isSaving, setIsSaving] = useState(false);
   const { settings, fetchSettings } = useOperationsStore();
-  const { 
-    groups, 
-    categories, 
-    subCategories, 
-    fetchGroups, 
-    fetchCategories, 
-    fetchSubCategories 
-  } = useFoodRelationshipsStore();
+  const { fetchGroups } = useFoodRelationshipsStore();
 
-  // Fetch all required data on mount
   useEffect(() => {
-    const loadData = async () => {
-      await Promise.all([
-        fetchSettings(),
-        fetchGroups()
-      ]);
-    };
-    loadData();
+    fetchSettings();
+    fetchGroups();
   }, [fetchSettings, fetchGroups]);
-
-  // Fetch categories when group changes
-  useEffect(() => {
-    if (formData.major_group) {
-      fetchCategories(formData.major_group);
-    }
-  }, [formData.major_group, fetchCategories]);
-
-  // Fetch sub-categories when category changes
-  useEffect(() => {
-    if (formData.category) {
-      fetchSubCategories(formData.category);
-    }
-  }, [formData.category, fetchSubCategories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +55,7 @@ export const EditIngredientModal: React.FC<EditIngredientModalProps> = ({
       <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Diagnostic Text */}
         <div className="text-xs text-gray-500 font-mono">
-          {diagnosticPath}
+          src/features/admin/components/sections/recipe/MasterIngredientList/EditIngredientModal/index.tsx
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -104,7 +74,6 @@ export const EditIngredientModal: React.FC<EditIngredientModalProps> = ({
                 disabled={isSaving}
                 className="btn-primary"
               >
-                <Save className="w-4 h-4 mr-2" />
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
@@ -114,9 +83,6 @@ export const EditIngredientModal: React.FC<EditIngredientModalProps> = ({
             <BasicInformation 
               formData={formData}
               settings={settings}
-              groups={groups}
-              categories={categories}
-              subCategories={subCategories}
               onChange={setFormData}
             />
 
