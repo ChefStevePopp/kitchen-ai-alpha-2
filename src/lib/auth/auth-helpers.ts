@@ -1,9 +1,8 @@
 import { supabase } from '../supabase';
-import { handleAuthError } from './auth-errors';
 
 export async function initializeUserOrganization(userId: string, email: string): Promise<string> {
   try {
-    // First check if user already has an organization role
+    // First check if user already has an organization
     const { data: existingRole } = await supabase
       .from('organization_roles')
       .select('organization_id')
@@ -48,7 +47,6 @@ export async function initializeUserOrganization(userId: string, email: string):
     return org.id;
   } catch (error) {
     console.error('Error initializing organization:', error);
-    handleAuthError(error, 'initialize organization');
     throw error;
   }
 }
@@ -57,7 +55,15 @@ export async function getUserOrganization(userId: string) {
   try {
     const { data, error } = await supabase
       .from('organization_roles')
-      .select('organization_id, role')
+      .select(`
+        organization_id,
+        role,
+        organizations (
+          id,
+          name,
+          settings
+        )
+      `)
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -65,7 +71,6 @@ export async function getUserOrganization(userId: string) {
     return data;
   } catch (error) {
     console.error('Error getting user organization:', error);
-    handleAuthError(error, 'get user organization');
     throw error;
   }
 }
