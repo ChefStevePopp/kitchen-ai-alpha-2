@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
 import { ROUTES } from '@/config/routes';
 
 export const SignIn: React.FC = () => {
@@ -10,7 +10,7 @@ export const SignIn: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const signIn = useAuthStore(state => state.signIn);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
