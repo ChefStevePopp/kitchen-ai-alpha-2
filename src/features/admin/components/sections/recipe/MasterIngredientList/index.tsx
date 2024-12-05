@@ -4,7 +4,7 @@ import { useMasterIngredientsStore } from '@/stores/masterIngredientsStore';
 import { ExcelDataGrid } from '@/features/shared/components/ExcelDataGrid';
 import { ImportExcelModal } from '../../../ImportExcelModal';
 import { EditIngredientModal } from './EditIngredientModal';
-import { AddIngredientModal } from './AddIngredientModal';
+import { CreateIngredientModal } from './CreateIngredientModal';
 import { CategoryStats } from './CategoryStats';
 import { masterIngredientColumns } from './columns';
 import { LoadingLogo } from '@/features/shared/components';
@@ -194,7 +194,7 @@ export const MasterIngredientList: React.FC = () => {
       />
 
       {isCreateModalOpen && (
-        <AddIngredientModal
+        <CreateIngredientModal
           isOpen={true}
           onClose={() => setIsCreateModalOpen(false)}
         />
