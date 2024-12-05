@@ -23,11 +23,16 @@ export const PurchaseUnits: React.FC<PurchaseUnitsProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Diagnostic Text */}
+      <div className="text-xs text-gray-500 font-mono">
+        src/features/admin/components/sections/recipe/MasterIngredientList/EditIngredientModal/PurchaseUnits.tsx
+      </div>
+
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center">
           <CircleDollarSign className="w-4 h-4 text-rose-400" />
         </div>
-        <h3 className="text-lg font-medium text-white">Purchase Units</h3>
+        <h3 className="text-lg font-medium text-white">Inventory Units</h3>
       </div>
       
       <div className="grid grid-cols-2 gap-4">
@@ -37,8 +42,8 @@ export const PurchaseUnits: React.FC<PurchaseUnitsProps> = ({
           </label>
           <input
             type="text"
-            value={formData.case_size}
-            onChange={(e) => onChange({ ...formData, case_size: e.target.value })}
+            value={formData.caseSize}
+            onChange={(e) => onChange({ ...formData, caseSize: e.target.value })}
             className="input w-full"
             required
             placeholder="e.g., 6x1kg, 24x500g"
@@ -46,15 +51,17 @@ export const PurchaseUnits: React.FC<PurchaseUnitsProps> = ({
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-400 mb-1">
-            Units per Case
+            Inventory Units Per Case
           </label>
           <input
-            type="text"
-            value={formData.units_per_case}
-            onChange={(e) => onChange({ ...formData, units_per_case: e.target.value })}
+            type="number"
+            value={formData.unitsPerCase}
+            onChange={(e) => onChange({ ...formData, unitsPerCase: e.target.value })}
             className="input w-full"
             required
-            placeholder="Number of units per case"
+            step="0.01"
+            min="0"
+            placeholder="Number of inventory units"
           />
         </div>
       </div>
@@ -66,8 +73,8 @@ export const PurchaseUnits: React.FC<PurchaseUnitsProps> = ({
           </label>
           <input
             type="number"
-            value={formData.current_price}
-            onChange={(e) => onChange({ ...formData, current_price: parseFloat(e.target.value) })}
+            value={formData.currentPrice}
+            onChange={(e) => onChange({ ...formData, currentPrice: parseFloat(e.target.value) })}
             className="input w-full"
             required
             step="0.01"
@@ -77,21 +84,21 @@ export const PurchaseUnits: React.FC<PurchaseUnitsProps> = ({
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-400 mb-1">
-            Unit of Measure
+            Inventory Unit of Measure
           </label>
           <select
-            value={formData.unit_of_measure}
-            onChange={(e) => onChange({ ...formData, unit_of_measure: e.target.value })}
+            value={formData.unitOfMeasure}
+            onChange={(e) => onChange({ ...formData, unitOfMeasure: e.target.value })}
             className="input w-full"
             required
           >
-            <option value="">Select unit...</option>
+            <option value="">Select inventory unit...</option>
             {measurementUnits.map((unit, index) => (
               <option key={`${unit}-${index}`} value={unit}>{unit}</option>
             ))}
           </select>
           <p className="text-xs text-gray-400 mt-1">
-            Base unit for inventory tracking
+            How will you count this item during inventory?
           </p>
         </div>
       </div>
