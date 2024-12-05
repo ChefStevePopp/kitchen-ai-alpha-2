@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
-import { Settings, Activity, Database, Brain, Palette, FileCode } from 'lucide-react';
+import React from 'react';
+import { Settings } from 'lucide-react';
 import { useDevAccess } from '@/hooks/useDevAccess';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { DatabasePanel } from './DatabasePanel';
 import { SystemInfoPanel } from './SystemInfoPanel';
 import { ThemeExport } from './ThemeExport';
-import { DevelopmentConsciousness } from './DevelopmentConsciousness';
 
 export const DevManagement: React.FC = () => {
   const { isDev } = useDevAccess();
-  const [activeTab, setActiveTab] = useState<'diagnostics' | 'system' | 'database' | 'brain' | 'theme'>('diagnostics');
 
   if (!isDev) {
     return (
@@ -23,14 +21,6 @@ export const DevManagement: React.FC = () => {
     );
   }
 
-  const tabs = [
-    { id: 'diagnostics' as const, label: 'Diagnostics', icon: FileCode, color: 'primary' },
-    { id: 'system' as const, label: 'System Info', icon: Activity, color: 'green' },
-    { id: 'database' as const, label: 'Database', icon: Database, color: 'amber' },
-    { id: 'brain' as const, label: 'Brain Health', icon: Brain, color: 'rose' },
-    { id: 'theme' as const, label: 'Theme', icon: Palette, color: 'purple' }
-  ];
-
   return (
     <div className="space-y-6">
       <header className="flex justify-between items-center">
@@ -40,29 +30,18 @@ export const DevManagement: React.FC = () => {
         </div>
       </header>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`tab ${tab.color} ${activeTab === tab.id ? 'active' : ''}`}
-          >
-            <tab.icon className={`w-5 h-5 ${
-              activeTab === tab.id ? `text-${tab.color}-400` : 'text-current'
-            }`} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column */}
+        <div className="space-y-6">
+          <DiagnosticsPanel />
+          <DatabasePanel />
+        </div>
 
-      {/* Tab Content */}
-      <div className="card p-6">
-        {activeTab === 'diagnostics' && <DiagnosticsPanel />}
-        {activeTab === 'system' && <SystemInfoPanel />}
-        {activeTab === 'database' && <DatabasePanel />}
-        {activeTab === 'brain' && <DevelopmentConsciousness />}
-        {activeTab === 'theme' && <ThemeExport />}
+        {/* Right Column */}
+        <div className="space-y-6">
+          <SystemInfoPanel />
+          <ThemeExport />
+        </div>
       </div>
     </div>
   );
