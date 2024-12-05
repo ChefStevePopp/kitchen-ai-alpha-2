@@ -1,15 +1,17 @@
 import { create } from 'zustand';
-import { authClient } from './auth-client';
-import { handleAuthError } from './auth-errors';
-import { initializeUserOrganization } from './auth-utils';
+import { supabase } from '../supabase';
+import { initializeUserOrganization, getUserOrganization } from './auth-helpers';
+import { handleAuthStateChange } from './auth-state';
 import type { User } from '@supabase/supabase-js';
 import toast from 'react-hot-toast';
 
 interface AuthState {
   user: User | null;
+  organizationId: string | null;
   isLoading: boolean;
   error: string | null;
   isDev: boolean;
+  hasAdminAccess: boolean;
   initialize: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -17,34 +19,39 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
+  organizationId: null,
   isLoading: true,
   error: null,
   isDev: false,
+  hasAdminAccess: false,
 
   initialize: async () => {
     try {
-      const { data: { session }, error } = await authClient.auth.getSession();
-      if (error) throw error;
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
 
       if (session?.user) {
-        const isDev = session.user.email === 'office@memphisfirebbq.com';
-        set({ user: session.user, isDev, error: null });
+        await handleAuthStateChange(session.user, set);
       }
     } catch (error) {
-      handleAuthError(error, 'initialize auth');
+      console.error('Auth initialization error:', error);
+      set({ error: 'Failed to initialize auth' });
     } finally {
       set({ isLoading: false });
     }
 
     // Listen for auth changes
-    const { data: { subscription } } = authClient.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const isDev = session.user.email === 'office@memphisfirebbq.com';
-        set({ user: session.user, isDev, error: null });
+        await handleAuthStateChange(session.user, set);
       } else {
-        set({ user: null, isDev: false });
+        set({
+          user: null,
+          organizationId: null,
+          isDev: false,
+          hasAdminAccess: false
+        });
       }
-      set({ isLoading: false });
     });
 
     return () => {
@@ -54,7 +61,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signIn: async (email: string, password: string) => {
     try {
-      const { data, error } = await authClient.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password: password.trim()
       });
@@ -62,27 +69,43 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (error) throw error;
       if (!data.user) throw new Error('No user data returned');
 
-      // Initialize organization if needed
-      await initializeUserOrganization(data.user.id, data.user.email || '');
+      // Get or initialize organization
+      const organizationId = await initializeUserOrganization(data.user.id, data.user.email || '');
 
-      const isDev = data.user.email === 'office@memphisfirebbq.com';
-      set({ user: data.user, isDev, error: null });
+      // Update user metadata if needed
+      if (!data.user.user_metadata?.organizationId) {
+        await supabase.auth.updateUser({
+          data: {
+            organizationId,
+            ...data.user.user_metadata
+          }
+        });
+      }
+
       toast.success('Signed in successfully');
     } catch (error) {
-      handleAuthError(error, 'sign in');
+      console.error('Sign in error:', error);
+      toast.error('Invalid email or password');
       throw error;
     }
   },
 
   signOut: async () => {
     try {
-      const { error } = await authClient.auth.signOut();
+      const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      set({ user: null, isDev: false });
+
+      set({
+        user: null,
+        organizationId: null,
+        isDev: false,
+        hasAdminAccess: false
+      });
+
       toast.success('Signed out successfully');
     } catch (error) {
-      handleAuthError(error, 'sign out');
-      throw error;
+      console.error('Sign out error:', error);
+      toast.error('Failed to sign out');
     }
   }
 }));
