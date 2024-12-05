@@ -14,12 +14,12 @@ export const RecipeUnits: React.FC<RecipeUnitsProps> = ({
   settings,
   onChange
 }) => {
-  // Calculate cost per recipe unit
+  // Calculate cost per recipe unit with proper type handling
   const costPerRecipeUnit = React.useMemo(() => {
     // Convert all inputs to numbers and provide defaults
-    const casePrice = Number(formData.current_price) || 0;
-    const recipeUnitsPerCase = Number(formData.recipe_unit_per_purchase_unit) || 1;
-    const yieldPercent = Number(formData.yield_percent) || 100;
+    const casePrice = Number(formData.currentPrice) || 0;
+    const recipeUnitsPerCase = Number(formData.recipeUnitPerPurchaseUnit) || 1;
+    const yieldPercent = Number(formData.yieldPercent) || 100;
 
     // Calculate cost per recipe unit:
     // 1. Get cost per recipe unit (casePrice / recipeUnitsPerCase)
@@ -28,10 +28,15 @@ export const RecipeUnits: React.FC<RecipeUnitsProps> = ({
     const adjustedCost = costPerUnit * (100 / yieldPercent);
 
     return adjustedCost;
-  }, [formData.current_price, formData.recipe_unit_per_purchase_unit, formData.yield_percent]);
+  }, [formData.currentPrice, formData.recipeUnitPerPurchaseUnit, formData.yieldPercent]);
 
   return (
     <div className="space-y-4">
+      {/* Diagnostic Text */}
+      <div className="text-xs text-gray-500 font-mono">
+        src/features/admin/components/sections/recipe/MasterIngredientList/EditIngredientModal/RecipeUnits.tsx
+      </div>
+
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
           <Scale className="w-4 h-4 text-emerald-400" />
@@ -46,10 +51,10 @@ export const RecipeUnits: React.FC<RecipeUnitsProps> = ({
           </label>
           <input
             type="number"
-            value={formData.recipe_unit_per_purchase_unit}
+            value={formData.recipeUnitPerPurchaseUnit || ''}
             onChange={(e) => onChange({ 
               ...formData, 
-              recipe_unit_per_purchase_unit: parseFloat(e.target.value) 
+              recipeUnitPerPurchaseUnit: parseFloat(e.target.value) || 0
             })}
             className="input w-full"
             required
@@ -66,8 +71,8 @@ export const RecipeUnits: React.FC<RecipeUnitsProps> = ({
             Recipe Unit Type
           </label>
           <select
-            value={formData.recipe_unit_type || ''}
-            onChange={(e) => onChange({ ...formData, recipe_unit_type: e.target.value })}
+            value={formData.recipeUnitType || ''}
+            onChange={(e) => onChange({ ...formData, recipeUnitType: e.target.value })}
             className="input w-full"
             required
           >
@@ -89,10 +94,10 @@ export const RecipeUnits: React.FC<RecipeUnitsProps> = ({
         <div className="relative">
           <input
             type="number"
-            value={formData.yield_percent}
+            value={formData.yieldPercent || ''}
             onChange={(e) => onChange({ 
               ...formData, 
-              yield_percent: parseFloat(e.target.value) 
+              yieldPercent: parseFloat(e.target.value) || 0
             })}
             className="input w-full pr-8"
             required
@@ -103,7 +108,7 @@ export const RecipeUnits: React.FC<RecipeUnitsProps> = ({
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
         </div>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-sm text-gray-400 mt-1">
           Percentage of usable product after waste/loss
         </p>
       </div>
