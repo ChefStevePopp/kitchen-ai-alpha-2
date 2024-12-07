@@ -3,95 +3,6 @@ import { supabase } from '@/lib/supabase';
 import type { PreparedItem, PreparedItemsStore } from '../types/prepared-items';
 import toast from 'react-hot-toast';
 
-// Allergen mapping from Excel headers to database columns
-const ALLERGEN_EXCEL_MAP = {
-  'Peanut': 'allergen_peanut',
-  'Crustacean': 'allergen_crustacean',
-  'Treenut': 'allergen_treenut', 
-  'Shellfish': 'allergen_shellfish',
-  'Sesame': 'allergen_sesame',
-  'Soy': 'allergen_soy',
-  'Fish': 'allergen_fish',
-  'Wheat': 'allergen_wheat',
-  'Milk': 'allergen_milk',
-  'Sulphite': 'allergen_sulphite',
-  'Egg': 'allergen_egg',
-  'Gluten': 'allergen_gluten',
-  'Mustard': 'allergen_mustard',
-  'Celery': 'allergen_celery',
-  'Garlic': 'allergen_garlic',
-  'Onion': 'allergen_onion',
-  'Nitrite': 'allergen_nitrite',
-  'Mushroom': 'allergen_mushroom',
-  'Hot Pepper': 'allergen_hot_pepper',
-  'Citrus': 'allergen_citrus',
-  'Pork': 'allergen_pork'
-};
-
-const validatePreparedItemsData = (data: any[]): any[] => {
-  if (!Array.isArray(data)) {
-    throw new Error('Invalid data format: Expected an array');
-  }
-
-  const requiredColumns = [
-    'Item ID',
-    'CATEGORY',
-    'PRODUCT',
-    'STATION',
-    'SUB CATEGORY',
-    'STORAGE AREA',
-    'CONTAINER',
-    'CONTAINER TYPE',
-    'SHELF LIFE',
-    'RECIPE UNIT (R/U)',
-    'COST PER R/U',
-    'YIELD %',
-    'FINAL $'
-  ];
-
-  const firstRow = data[0];
-  if (!firstRow || typeof firstRow !== 'object') {
-    throw new Error('Invalid data format: No valid rows found');
-  }
-
-  const missingColumns = requiredColumns.filter(col => !(col in firstRow));
-  if (missingColumns.length > 0) {
-    throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
-  }
-
-  return data
-    .filter(row => {
-      const productName = row['PRODUCT']?.toString().trim();
-      return productName && productName !== '0';
-    })
-    .map(row => {
-      // Process allergens into database column format
-      const allergens = Object.entries(ALLERGEN_EXCEL_MAP).reduce((acc, [excelName, dbColumn]) => {
-        const value = row[excelName]?.toString().trim();
-        acc[dbColumn] = value === '1' || (parseFloat(value) > 0);
-        return acc;
-      }, {} as Record<string, boolean>);
-
-      return {
-        item_id: row['Item ID']?.toString() || '',
-        category: row['CATEGORY']?.toString() || '',
-        product: row['PRODUCT']?.toString() || '',
-        station: row['STATION']?.toString() || '',
-        sub_category: row['SUB CATEGORY']?.toString() || '',
-        storage_area: row['STORAGE AREA']?.toString() || '',
-        container: row['CONTAINER']?.toString() || '',
-        container_type: row['CONTAINER TYPE']?.toString() || '',
-        shelf_life: row['SHELF LIFE']?.toString() || '',
-        recipe_unit: row['RECIPE UNIT (R/U)']?.toString() || '',
-        cost_per_recipe_unit: parseFloat(row['COST PER R/U']?.toString().replace(/[$,]/g, '') || '0'),
-        yield_percent: parseFloat(row['YIELD %']?.toString().replace(/%/g, '') || '0'),
-        final_cost: parseFloat(row['FINAL $']?.toString().replace(/[$,]/g, '') || '0'),
-        ...allergens,
-        last_updated: new Date().toISOString()
-      };
-    });
-};
-
 export const usePreparedItemsStore = create<PreparedItemsStore>((set, get) => ({
   items: [],
   isLoading: false,
@@ -115,26 +26,25 @@ export const usePreparedItemsStore = create<PreparedItemsStore>((set, get) => ({
 
       if (error) throw error;
 
-      const transformedData = data.map(row => ({
-        id: row.id,
-        itemId: row.item_id,
-        category: row.category,
-        product: row.product,
-        station: row.station,
-        subCategory: row.sub_category,
-        storageArea: row.storage_area,
-        container: row.container,
-        containerType: row.container_type,
-        shelfLife: row.shelf_life,
-        recipeUnit: row.recipe_unit,
-        costPerRecipeUnit: row.cost_per_recipe_unit,
-        yieldPercent: row.yield_percent,
-        finalCost: row.final_cost,
-        allergens: Object.entries(ALLERGEN_EXCEL_MAP).reduce((acc, [name, dbCol]) => {
-          acc[name.toLowerCase().replace(' ', '_')] = row[dbCol];
-          return acc;
-        }, {} as Record<string, boolean>),
-        lastUpdated: row.last_updated
+      const transformedData = data.map(item => ({
+        id: item.id,
+        itemId: item.item_id,
+        category: item.category,
+        product: item.product,
+        station: item.station,
+        subCategory: item.sub_category,
+        storageArea: item.storage_area,
+        container: item.container,
+        containerType: item.container_type,
+        shelfLife: item.shelf_life,
+        recipeUnit: item.recipe_unit,
+        costPerRecipeUnit: item.cost_per_recipe_unit,
+        yieldPercent: item.yield_percent,
+        finalCost: item.final_cost,
+        allergens: Object.entries(item)
+          .filter(([key, value]) => key.startsWith('allergen_') && value === true)
+          .map(([key]) => key.replace('allergen_', '')),
+        lastUpdated: item.updated_at
       }));
 
       set({ items: transformedData });
@@ -149,8 +59,6 @@ export const usePreparedItemsStore = create<PreparedItemsStore>((set, get) => ({
   importItems: async (data: any[]) => {
     set({ isImporting: true });
     try {
-      const validatedData = validatePreparedItemsData(data);
-      
       const { data: { user } } = await supabase.auth.getUser();
       const organizationId = user?.user_metadata?.organizationId;
       
@@ -158,14 +66,60 @@ export const usePreparedItemsStore = create<PreparedItemsStore>((set, get) => ({
         throw new Error('No organization ID found');
       }
 
-      const upsertData = validatedData.map(item => ({
+      // Process and validate import data
+      const importData = data.map(row => ({
         organization_id: organizationId,
-        ...item
+        item_id: row['Item ID']?.toString().trim(),
+        category: row['CATEGORY']?.toString().trim(),
+        product: row['PRODUCT']?.toString().trim(),
+        station: row['STATION']?.toString().trim(),
+        sub_category: row['SUB CATEGORY']?.toString().trim(),
+        storage_area: row['STORAGE AREA']?.toString().trim(),
+        container: row['CONTAINER']?.toString().trim(),
+        container_type: row['CONTAINER TYPE']?.toString().trim(),
+        shelf_life: row['SHELF LIFE']?.toString().trim(),
+        recipe_unit: row['RECIPE UNIT']?.toString().trim(),
+        cost_per_recipe_unit: parseFloat(row['COST PER R/U']?.toString().replace(/[$,]/g, '') || '0'),
+        yield_percent: parseFloat(row['YIELD %']?.toString().replace(/%/g, '') || '100'),
+        final_cost: parseFloat(row['FINAL $']?.toString().replace(/[$,]/g, '') || '0'),
+        
+        // Allergens
+        allergen_peanut: row['Peanut'] === '1',
+        allergen_crustacean: row['Crustacean'] === '1',
+        allergen_treenut: row['Tree Nut'] === '1',
+        allergen_shellfish: row['Shellfish'] === '1',
+        allergen_sesame: row['Sesame'] === '1',
+        allergen_soy: row['Soy'] === '1',
+        allergen_fish: row['Fish'] === '1',
+        allergen_wheat: row['Wheat'] === '1',
+        allergen_milk: row['Milk'] === '1',
+        allergen_sulphite: row['Sulphite'] === '1',
+        allergen_egg: row['Egg'] === '1',
+        allergen_gluten: row['Gluten'] === '1',
+        allergen_mustard: row['Mustard'] === '1',
+        allergen_celery: row['Celery'] === '1',
+        allergen_garlic: row['Garlic'] === '1',
+        allergen_onion: row['Onion'] === '1',
+        allergen_nitrite: row['Nitrite'] === '1',
+        allergen_mushroom: row['Mushroom'] === '1',
+        allergen_hot_pepper: row['Hot Pepper'] === '1',
+        allergen_citrus: row['Citrus'] === '1',
+        allergen_pork: row['Pork'] === '1',
+        
+        // Custom allergens
+        allergen_custom1_name: row['Custom Allergen 1 Name']?.toString().trim(),
+        allergen_custom1_active: row['Custom Allergen 1 Active'] === '1',
+        allergen_custom2_name: row['Custom Allergen 2 Name']?.toString().trim(),
+        allergen_custom2_active: row['Custom Allergen 2 Active'] === '1',
+        allergen_custom3_name: row['Custom Allergen 3 Name']?.toString().trim(),
+        allergen_custom3_active: row['Custom Allergen 3 Active'] === '1',
+        allergen_notes: row['Allergen Notes']?.toString().trim()
       }));
 
+      // Insert data into Supabase
       const { error } = await supabase
         .from('prepared_items')
-        .upsert(upsertData, {
+        .upsert(importData, {
           onConflict: 'organization_id,item_id',
           ignoreDuplicates: false
         });
@@ -174,13 +128,13 @@ export const usePreparedItemsStore = create<PreparedItemsStore>((set, get) => ({
 
       // Refresh the items list
       await get().fetchItems();
-      toast.success('Prepared items updated successfully');
+      toast.success('Prepared items imported successfully');
     } catch (error) {
       console.error('Import error:', error);
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
-        toast.error('Failed to import data');
+        toast.error('Failed to import prepared items');
       }
       throw error;
     } finally {
@@ -213,8 +167,31 @@ export const usePreparedItemsStore = create<PreparedItemsStore>((set, get) => ({
   },
 
   saveItems: async () => {
-    // No need to implement this since we're saving directly to Supabase
-    // during import. This is kept for API compatibility.
-    toast.success('Data is automatically saved to the database');
+    try {
+      const { items } = get();
+      const { data: { user } } = await supabase.auth.getUser();
+      const organizationId = user?.user_metadata?.organizationId;
+      
+      if (!organizationId) {
+        throw new Error('No organization ID found');
+      }
+
+      // Update all items
+      for (const item of items) {
+        const { error } = await supabase
+          .from('prepared_items')
+          .upsert({
+            organization_id: organizationId,
+            ...item
+          });
+
+        if (error) throw error;
+      }
+
+      toast.success('Prepared items saved successfully');
+    } catch (error) {
+      console.error('Error saving items:', error);
+      toast.error('Failed to save prepared items');
+    }
   }
 }));
