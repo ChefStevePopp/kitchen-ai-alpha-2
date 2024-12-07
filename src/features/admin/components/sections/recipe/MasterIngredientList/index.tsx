@@ -4,7 +4,6 @@ import { useMasterIngredientsStore } from '@/stores/masterIngredientsStore';
 import { ExcelDataGrid } from '@/features/shared/components/ExcelDataGrid';
 import { ImportExcelModal } from '../../../ImportExcelModal';
 import { EditIngredientModal } from './EditIngredientModal';
-import { AddIngredientModal } from './AddIngredientModal';
 import { CategoryStats } from './CategoryStats';
 import { masterIngredientColumns } from './columns';
 import { LoadingLogo } from '@/features/shared/components';
@@ -14,7 +13,6 @@ import toast from 'react-hot-toast';
 
 export const MasterIngredientList: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<MasterIngredient | null>(null);
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -131,40 +129,33 @@ export const MasterIngredientList: React.FC = () => {
         <div className="flex gap-4">
           <button
             onClick={handleClearData}
-            className="btn-ghost-red"
+            className="btn-ghost text-red-400 hover:text-red-300"
             disabled={ingredients.length === 0}
           >
-            <Trash2 className="w-5 h-5" />
+            <Trash2 className="w-5 h-5 mr-2" />
             Clear Data
           </button>
           <button
             onClick={handleSaveData}
-            className="btn-ghost-green"
+            className="btn-ghost text-green-400 hover:text-green-300"
             disabled={ingredients.length === 0}
           >
-            <Save className="w-5 h-5" />
+            <Save className="w-5 h-5 mr-2" />
             Save Data
           </button>
           <button
             onClick={handleDownloadTemplate}
-            className="btn-ghost-blue"
+            className="btn-ghost text-blue-400 hover:text-blue-300"
           >
-            <Download className="w-5 h-5" />
+            <Download className="w-5 h-5 mr-2" />
             Download Template
           </button>
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="btn-secondary"
-          >
-            <Upload className="w-5 h-5" />
-            Import Excel
-          </button>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
             className="btn-primary"
           >
-            <Plus className="w-5 h-5" />
-            Add Ingredient
+            <Upload className="w-5 h-5 mr-2" />
+            Import Excel
           </button>
         </div>
       </header>
@@ -192,13 +183,6 @@ export const MasterIngredientList: React.FC = () => {
         onImport={handleImport}
         type="master-ingredients"
       />
-
-      {isCreateModalOpen && (
-        <AddIngredientModal
-          isOpen={true}
-          onClose={() => setIsCreateModalOpen(false)}
-        />
-      )}
 
       {editingIngredient && (
         <EditIngredientModal
