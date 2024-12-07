@@ -3,7 +3,7 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 import { AdminLayout } from '../components/AdminLayout';
 import { AdminDashboard } from '../components/AdminDashboard';
 import { ExcelImports } from '../components/sections/ExcelImports';
-import { TeamManagement } from '../components/sections/TeamManagement';
+import { TeamManagement } from '@/features/team/components/TeamManagement';
 import { RecipeConfig } from '../components/sections/RecipeConfig';
 import { TaskManagement } from '../components/sections/TaskManagement';
 import { NotificationCenter } from '../components/sections/NotificationCenter';
