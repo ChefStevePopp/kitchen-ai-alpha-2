@@ -4,19 +4,21 @@ import { useDropzone } from 'react-dropzone';
 import { read, utils } from 'xlsx';
 import { LoadingLogo } from '@/features/shared/components';
 import { ExcelDataGrid } from '@/features/shared/components/ExcelDataGrid';
-import { ALL_COLUMNS, CORE_COLUMNS } from '@/utils/excel/masterIngredients/columns';
+import { masterIngredientColumns } from '../sections/recipe/MasterIngredientList/columns';
+import { preparedItemColumns } from '../sections/PreparedItems/columns';
+import { inventoryColumns } from '../sections/InventoryManagement/columns';
 import toast from 'react-hot-toast';
 
 interface ImportExcelModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (data: any[]) => Promise<void>;
+  onImport: (data: any[], sheetName: string) => Promise<void>;
   type: 'inventory' | 'prepared-items' | 'master-ingredients';
 }
 
-export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
-  isOpen,
-  onClose,
+export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({ 
+  isOpen, 
+  onClose, 
   onImport,
   type
 }) => {
@@ -24,6 +26,45 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
   const [previewData, setPreviewData] = useState<any[] | null>(null);
   const [workbook, setWorkbook] = useState<any>(null);
   const [selectedSheet, setSelectedSheet] = useState('');
+
+  // Get required columns based on type
+  const requiredColumns = type === 'master-ingredients' ? [
+    'UNIQ ID',
+    'CATEGORY',
+    'PRODUCT',
+    'VENDOR',
+    'SUB-CATEGORY',
+    'ITEM # | CODE',
+    'P/U CASE SIZE',
+    'P/U# PER CASE',
+    'CURRENT PRICE',
+    'UNIT OF MEASURE',
+    'R/U PER P/U',
+    'YIELD %',
+    '$ PER R/U'
+  ] : type === 'prepared-items' ? [
+    'Item ID',
+    'CATEGORY',
+    'PRODUCT',
+    'STATION',
+    'SUB CATEGORY',
+    'STORAGE AREA',
+    'CONTAINER',
+    'CONTAINER TYPE',
+    'SHELF LIFE',
+    'RECIPE UNIT (R/U)',
+    'COST PER R/U',
+    'YIELD %',
+    'FINAL $'
+  ] : [
+    'Item ID',
+    'Product Name',
+    'Category',
+    'Vendor',
+    'Unit of Measure',
+    'Price',
+    'Adjusted Price'
+  ];
 
   const handleFileUpload = async (file: File) => {
     setIsProcessing(true);
@@ -48,12 +89,9 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
       setIsProcessing(true);
       const worksheet = workbook.Sheets[sheetName];
       
-      // Get all column headers from the columns definition
-      const headers = ALL_COLUMNS.map(col => col.name);
-      
       // Read data using predefined column order
       const jsonData = utils.sheet_to_json(worksheet, {
-        header: headers,
+        header: requiredColumns,
         range: 1, // Skip header row
         raw: false,
         defval: ''
@@ -61,9 +99,9 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 
       // Filter out empty rows
       const validRows = jsonData.filter(row => {
-        const productName = row['Product Name']?.toString().trim();
-        const itemCode = row['Item Code']?.toString().trim();
-        return productName && itemCode && productName !== '0' && itemCode !== '0';
+        const idField = type === 'master-ingredients' ? 'UNIQ ID' : 'Item ID';
+        const nameField = type === 'master-ingredients' ? 'PRODUCT' : 'Product Name';
+        return row[idField]?.toString().trim() && row[nameField]?.toString().trim();
       });
 
       if (validRows.length === 0) {
@@ -74,7 +112,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
       }
 
       setSelectedSheet(sheetName);
-      setPreviewData(validRows.slice(0, 5)); // Show first 5 rows in preview
+      setPreviewData(validRows);
     } catch (error) {
       console.error('Error loading sheet:', error);
       toast.error('Failed to load sheet data');
@@ -102,16 +140,14 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 
     try {
       const worksheet = workbook.Sheets[selectedSheet];
-      const headers = ALL_COLUMNS.map(col => col.name);
-      
       const jsonData = utils.sheet_to_json(worksheet, {
-        header: headers,
+        header: requiredColumns,
         range: 1,
         raw: false,
         defval: ''
       });
 
-      await onImport(jsonData);
+      await onImport(jsonData, selectedSheet);
       onClose();
     } catch (error) {
       console.error('Import error:', error);
@@ -119,13 +155,26 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
     }
   };
 
+  const getColumns = () => {
+    switch (type) {
+      case 'master-ingredients':
+        return masterIngredientColumns;
+      case 'prepared-items':
+        return preparedItemColumns;
+      case 'inventory':
+        return inventoryColumns;
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-gray-900 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-gray-900 p-6 border-b border-gray-800 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-white">Import Master Ingredients</h2>
+          <h2 className="text-2xl font-bold text-white">
+            Import {type === 'master-ingredients' ? 'Master Ingredients' : type === 'prepared-items' ? 'Prepared Items' : 'Inventory Data'}
+          </h2>
           <button 
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -162,11 +211,11 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                   <h3 className="text-lg font-medium text-white mb-4">Data Preview</h3>
                   <div className="bg-gray-800 rounded-lg p-4">
                     <ExcelDataGrid
-                      columns={ALL_COLUMNS}
-                      data={previewData}
+                      columns={getColumns()}
+                      data={previewData.slice(0, 5)}
                       categoryFilter="all"
                       onCategoryChange={() => {}}
-                      type="master-ingredients"
+                      type={type}
                     />
                     <p className="text-sm text-gray-400 mt-4 pt-4 border-t border-gray-700">
                       Showing first 5 rows of {previewData.length} total rows
@@ -205,28 +254,11 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                 <p className="text-sm text-gray-300 mt-1">
                   The Excel file must contain the following columns:
                 </p>
-                <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-3">
-                  <div>
-                    <h4 className="text-sm font-medium text-white mb-2">Core Fields</h4>
-                    <ul className="text-sm text-gray-300 list-disc list-inside space-y-1">
-                      {CORE_COLUMNS
-                        .filter(col => col.required)
-                        .map(col => (
-                          <li key={col.key}>{col.name}</li>
-                        ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-white mb-2">Allergen Fields</h4>
-                    <ul className="text-sm text-gray-300 list-disc list-inside space-y-1">
-                      {ALL_COLUMNS
-                        .filter(col => col.key.startsWith('allergen_'))
-                        .map(col => (
-                          <li key={col.key}>{col.name}</li>
-                        ))}
-                    </ul>
-                  </div>
-                </div>
+                <ul className="text-sm text-gray-300 mt-1 list-disc list-inside">
+                  {requiredColumns.map(col => (
+                    <li key={col}>{col}</li>
+                  ))}
+                </ul>
               </div>
             </div>
           </div>
