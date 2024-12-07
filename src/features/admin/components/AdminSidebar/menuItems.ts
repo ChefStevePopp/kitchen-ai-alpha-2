@@ -11,8 +11,7 @@ import {
   UtensilsCrossed,
   Package,
   Settings,
-  Box,
-  ChefHat
+  Box
 } from 'lucide-react';
 
 export const getAdminMenuItems = (isDev: boolean) => {
@@ -21,13 +20,6 @@ export const getAdminMenuItems = (isDev: boolean) => {
       id: 'account',
       items: [
         { icon: User, label: 'My Account', path: '/admin/my-account' }
-      ]
-    },
-    {
-      id: 'kitchen',
-      label: 'KITCHEN',
-      items: [
-        { icon: ChefHat, label: 'Recipe Configuration', path: '/admin/recipes' }
       ]
     },
     {
@@ -68,7 +60,6 @@ export const getAdminMenuItems = (isDev: boolean) => {
     }
   ];
 
-  // Add Dev Management section only for dev users
   if (isDev) {
     menuItems.push({
       id: 'dev',
