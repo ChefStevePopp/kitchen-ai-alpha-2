@@ -166,20 +166,20 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
 
     if (field === 'name') {
       if (ingredient.type === 'raw') {
-        const inventoryItem = masterIngredients.find(item => item.item_code === value);
+        const inventoryItem = masterIngredients.find(item => item.uniqueId === value);
         if (inventoryItem) {
-          ingredient.cost = inventoryItem.cost_per_recipe_unit;
+          ingredient.cost = inventoryItem.pricePerRatioUnit;
         }
       } else {
-        const preparedItem = preparedItems.find(item => item.id === value);
+        const preparedItem = preparedItems.find(item => item.product === value);
         if (preparedItem) {
-          ingredient.cost = preparedItem.cost_per_recipe_unit;
+          ingredient.cost = preparedItem.finalCost;
           ingredient.preparedItemId = preparedItem.id;
         }
       }
     }
 
-    ingredient[field as keyof RecipeIngredient] = value as never;
+    ingredient[field] = value;
     setRecipe(prev => ({
       ...prev,
       ingredients: newIngredients
@@ -195,7 +195,7 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
           id: `ing-${Date.now()}`,
           type: 'raw',
           name: '',
-          quantity: '0',
+          quantity: '',
           unit: 'g',
           notes: '',
           cost: 0
@@ -269,7 +269,7 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-gray-900 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-gray-900 p-6 border-b border-gray-800 flex justify-between items-center z-10">
           <h2 className="text-2xl font-bold text-white">Edit Recipe</h2>
           <div className="flex items-center gap-4">
@@ -470,13 +470,13 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
                       <option value="">Select ingredient</option>
                       {ingredient.type === 'raw' ? (
                         masterIngredients.map((item) => (
-                          <option key={`raw-${item.item_code}`} value={item.item_code}>
+                          <option key={item.uniqueId} value={item.uniqueId}>
                             {item.product}
                           </option>
                         ))
                       ) : (
                         preparedItems.map((item) => (
-                          <option key={`prep-${item.id}`} value={item.product}>
+                          <option key={item.id} value={item.product}>
                             {item.product}
                           </option>
                         ))
@@ -560,7 +560,7 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
             
             <div className="space-y-4">
               {recipe.instructions.map((instruction, index) => (
-                <div key={`instruction-${index}`} className="flex gap-4">
+                <div key={index} className="flex gap-4">
                   <span className="text-gray-400 mt-2">
                     {index + 1}.
                   </span>
@@ -619,7 +619,7 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
                 >
                   <option value="">Select storage area...</option>
                   {STORAGE_AREAS.map(area => (
-                    <option key={`storage-${area}`} value={area}>{area}</option>
+                    <option key={area} value={area}>{area}</option>
                   ))}
                 </select>
               </div>
@@ -636,7 +636,7 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
                 >
                   <option value="">Select container type...</option>
                   {CONTAINER_TYPES.map(type => (
-                    <option key={`container-${type}`} value={type}>{type}</option>
+                    <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
               </div>
@@ -666,7 +666,7 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
                 >
                   <option value="">Select shelf life...</option>
                   {SHELF_LIFE_OPTIONS.map(option => (
-                    <option key={`shelf-${option}`} value={option}>{option}</option>
+                    <option key={option} value={option}>{option}</option>
                   ))}
                 </select>
               </div>
@@ -679,7 +679,7 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
             
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {ALLERGENS.map(allergen => (
-                <label key={`allergen-${allergen}`} className="flex items-center gap-2">
+                <label key={allergen} className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={recipe.allergens.includes(allergen)}
@@ -711,7 +711,7 @@ export const RecipeEditorModal: React.FC<RecipeEditorModalProps> = ({
                 <div className="flex flex-wrap gap-2">
                   {recipe.allergens.map(allergen => (
                     <AllergenBadge 
-                      key={`warning-${allergen}`}
+                      key={allergen} 
                       type={allergen}
                       showLabel
                     />
