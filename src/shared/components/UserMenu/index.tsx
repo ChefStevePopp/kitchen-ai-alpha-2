@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { User, Settings, LogOut, Building2, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/config/routes';
-import toast from 'react-hot-toast';
 
 export const UserMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,8 +26,8 @@ export const UserMenu: React.FC = () => {
       await signOut();
       navigate(ROUTES.AUTH.SIGN_IN);
     } catch (error) {
-      console.error('Error signing out:', error);
-      toast.error('Failed to sign out');
+      // Error is already handled by useAuth hook
+      console.debug('Sign out error handled by useAuth');
     }
   };
 
