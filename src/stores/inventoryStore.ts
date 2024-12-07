@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import type { InventoryCount } from '@/types/inventory';
-import type { MasterIngredient } from '@/types/master-ingredient';
 import toast from 'react-hot-toast';
 
 interface InventoryStore {
@@ -12,7 +11,7 @@ interface InventoryStore {
   addCount: (count: Omit<InventoryCount, 'id' | 'lastUpdated'>) => Promise<void>;
   updateCount: (id: string, updates: Partial<InventoryCount>) => Promise<void>;
   deleteCount: (id: string) => Promise<void>;
-  importItems: (data: any[]) => Promise<void>;
+  importCounts: (data: any[]) => Promise<void>;
   clearItems: () => Promise<void>;
 }
 
@@ -32,8 +31,17 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
       }
 
       const { data, error } = await supabase
-        .from('inventory_counts_with_ingredients')
-        .select('*')
+        .from('inventory_counts')
+        .select(`
+          *,
+          ingredient:master_ingredients (
+            unique_id,
+            product,
+            category,
+            unit_of_measure,
+            image_url
+          )
+        `)
         .eq('organization_id', organizationId)
         .order('count_date', { ascending: false });
 
@@ -50,14 +58,7 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
         notes: row.notes,
         status: row.status,
         lastUpdated: row.updated_at,
-        ingredient: {
-          itemCode: row.item_code,
-          product: row.product,
-          category: row.category_name,
-          subCategory: row.sub_category_name,
-          unitOfMeasure: row.unit_of_measure,
-          imageUrl: row.image_url
-        }
+        ingredient: row.ingredient
       }));
 
       set({ items: transformedData, error: null });
@@ -76,18 +77,6 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
       
       if (!organizationId) {
         throw new Error('No organization ID found');
-      }
-
-      // First verify the master ingredient exists
-      const { data: ingredient, error: ingredientError } = await supabase
-        .from('master_ingredients')
-        .select('id, item_code, product')
-        .eq('id', count.masterIngredientId)
-        .eq('organization_id', organizationId)
-        .single();
-
-      if (ingredientError || !ingredient) {
-        throw new Error(`Master ingredient not found: ${count.masterIngredientId}`);
       }
 
       const { error } = await supabase
@@ -122,19 +111,13 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
           unit_cost: updates.unitCost,
           location: updates.location,
           notes: updates.notes,
-          status: updates.status,
-          updated_at: new Date().toISOString()
+          status: updates.status
         })
         .eq('id', id);
 
       if (error) throw error;
 
-      set(state => ({
-        items: state.items.map(item =>
-          item.id === id ? { ...item, ...updates } : item
-        )
-      }));
-
+      await get().fetchItems();
       toast.success('Inventory count updated successfully');
     } catch (error) {
       console.error('Error updating count:', error);
@@ -151,10 +134,7 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
 
       if (error) throw error;
 
-      set(state => ({
-        items: state.items.filter(item => item.id !== id)
-      }));
-
+      await get().fetchItems();
       toast.success('Inventory count deleted successfully');
     } catch (error) {
       console.error('Error deleting count:', error);
@@ -162,7 +142,7 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
     }
   },
 
-  importItems: async (data) => {
+  importCounts: async (data) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const organizationId = user?.user_metadata?.organizationId;
@@ -174,29 +154,21 @@ export const useInventoryStore = create<InventoryStore>((set, get) => ({
       // First get all master ingredients for reference
       const { data: ingredients, error: ingredientsError } = await supabase
         .from('master_ingredients')
-        .select('id, item_code')
+        .select('id, unique_id')
         .eq('organization_id', organizationId);
 
       if (ingredientsError) throw ingredientsError;
 
       // Create lookup map
       const ingredientMap = new Map(
-        ingredients.map(ing => [ing.item_code, ing.id])
+        ingredients.map(ing => [ing.unique_id, ing.id])
       );
 
       // Process and validate import data
       const validCounts = data
         .filter(row => {
           const itemId = row['Item ID']?.toString().trim();
-          if (!itemId) {
-            console.warn('Row missing Item ID:', row);
-            return false;
-          }
-          if (!ingredientMap.has(itemId)) {
-            console.warn(`Item ID not found in master ingredients: ${itemId}`);
-            return false;
-          }
-          return true;
+          return itemId && ingredientMap.has(itemId);
         })
         .map(row => ({
           organization_id: organizationId,
