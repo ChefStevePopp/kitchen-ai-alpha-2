@@ -7,13 +7,8 @@ import { AdditionalSettings } from './AdditionalSettings';
 import { BoardOfHealth } from './BoardOfHealth';
 import { useOrganizationSettings } from './useOrganizationSettings';
 import { LoadingLogo } from '@/features/shared/components';
-import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/config/routes';
 
 export const OrganizationSettings: React.FC = () => {
-  const navigate = useNavigate();
-  const { organizationId } = useAuth();
   const { 
     isLoading, 
     isSaving,
@@ -23,14 +18,6 @@ export const OrganizationSettings: React.FC = () => {
   } = useOrganizationSettings();
 
   const [activeTab, setActiveTab] = useState<'organization' | 'industry' | 'location' | 'health' | 'additional'>('organization');
-
-  // Redirect if no organization
-  React.useEffect(() => {
-    if (!organizationId && !isLoading) {
-      toast.error('No organization found');
-      navigate(ROUTES.KITCHEN.DASHBOARD);
-    }
-  }, [organizationId, isLoading, navigate]);
 
   const tabs = [
     {
