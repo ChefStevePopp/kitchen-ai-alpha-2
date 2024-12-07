@@ -1,35 +1,32 @@
 export interface FoodCategoryGroup {
   id: string;
-  organization_id: string;
   name: string;
   description?: string;
   icon: string;
   color: string;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FoodCategory {
   id: string;
-  organization_id: string;
-  group_id: string;
+  groupId: string;
   name: string;
   description?: string;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FoodSubCategory {
   id: string;
-  organization_id: string;
-  category_id: string;
+  categoryId: string;
   name: string;
   description?: string;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FoodRelationshipsStore {
@@ -41,6 +38,21 @@ export interface FoodRelationshipsStore {
   
   // Fetch methods
   fetchGroups: () => Promise<void>;
-  fetchCategories: (groupId: string) => Promise<void>;
-  fetchSubCategories: (categoryId: string) => Promise<void>;
+  fetchCategories: (groupId?: string) => Promise<void>;
+  fetchSubCategories: (categoryId?: string) => Promise<void>;
+  
+  // Group methods
+  addGroup: (group: Omit<FoodCategoryGroup, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateGroup: (id: string, updates: Partial<FoodCategoryGroup>) => Promise<void>;
+  deleteGroup: (id: string) => Promise<void>;
+  
+  // Category methods
+  addCategory: (category: Omit<FoodCategory, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateCategory: (id: string, updates: Partial<FoodCategory>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
+  
+  // Sub-category methods
+  addSubCategory: (subCategory: Omit<FoodSubCategory, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateSubCategory: (id: string, updates: Partial<FoodSubCategory>) => Promise<void>;
+  deleteSubCategory: (id: string) => Promise<void>;
 }
