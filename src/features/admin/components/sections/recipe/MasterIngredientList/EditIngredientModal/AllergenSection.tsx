@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { AllergenBadge } from '@/features/allergens/components/AllergenBadge';
 import type { MasterIngredient } from '@/types/master-ingredient';
+import type { AllergenType } from '@/features/allergens/types';
 
 interface AllergenSectionProps {
   formData: MasterIngredient;
@@ -12,8 +13,11 @@ export const AllergenSection: React.FC<AllergenSectionProps> = ({
   formData,
   onChange
 }) => {
+  // Diagnostic Text
+  const diagnosticPath = "src/features/admin/components/sections/recipe/MasterIngredientList/EditIngredientModal/AllergenSection.tsx";
+
   const handleAllergenToggle = (allergenKey: string) => {
-    const key = `allergen${allergenKey.charAt(0).toUpperCase() + allergenKey.slice(1)}` as keyof MasterIngredient;
+    const key = `allergen_${allergenKey}` as keyof MasterIngredient;
     onChange({
       ...formData,
       [key]: !formData[key]
@@ -22,40 +26,40 @@ export const AllergenSection: React.FC<AllergenSectionProps> = ({
 
   // Group allergens by severity
   const highPriorityAllergens = [
-    { key: 'peanut', active: formData.allergenPeanut },
-    { key: 'crustacean', active: formData.allergenCrustacean },
-    { key: 'treenut', active: formData.allergenTreenut },
-    { key: 'shellfish', active: formData.allergenShellfish },
-    { key: 'sesame', active: formData.allergenSesame }
+    { key: 'peanut', active: formData.allergen_peanut },
+    { key: 'crustacean', active: formData.allergen_crustacean },
+    { key: 'treenut', active: formData.allergen_treenut },
+    { key: 'shellfish', active: formData.allergen_shellfish },
+    { key: 'sesame', active: formData.allergen_sesame }
   ];
 
   const mediumPriorityAllergens = [
-    { key: 'soy', active: formData.allergenSoy },
-    { key: 'fish', active: formData.allergenFish },
-    { key: 'wheat', active: formData.allergenWheat },
-    { key: 'milk', active: formData.allergenMilk },
-    { key: 'sulphite', active: formData.allergenSulphite },
-    { key: 'egg', active: formData.allergenEgg },
-    { key: 'gluten', active: formData.allergenGluten },
-    { key: 'mustard', active: formData.allergenMustard },
-    { key: 'pork', active: formData.allergenPork }
+    { key: 'soy', active: formData.allergen_soy },
+    { key: 'fish', active: formData.allergen_fish },
+    { key: 'wheat', active: formData.allergen_wheat },
+    { key: 'milk', active: formData.allergen_milk },
+    { key: 'sulphite', active: formData.allergen_sulphite },
+    { key: 'egg', active: formData.allergen_egg },
+    { key: 'gluten', active: formData.allergen_gluten },
+    { key: 'mustard', active: formData.allergen_mustard },
+    { key: 'pork', active: formData.allergen_pork }
   ];
 
   const lowPriorityAllergens = [
-    { key: 'celery', active: formData.allergenCelery },
-    { key: 'garlic', active: formData.allergenGarlic },
-    { key: 'onion', active: formData.allergenOnion },
-    { key: 'nitrite', active: formData.allergenNitrite },
-    { key: 'mushroom', active: formData.allergenMushroom },
-    { key: 'hotPepper', active: formData.allergenHotPepper },
-    { key: 'citrus', active: formData.allergenCitrus }
+    { key: 'celery', active: formData.allergen_celery },
+    { key: 'garlic', active: formData.allergen_garlic },
+    { key: 'onion', active: formData.allergen_onion },
+    { key: 'nitrite', active: formData.allergen_nitrite },
+    { key: 'mushroom', active: formData.allergen_mushroom },
+    { key: 'hot_pepper', active: formData.allergen_hot_pepper },
+    { key: 'citrus', active: formData.allergen_citrus }
   ];
 
   return (
     <div className="space-y-4">
       {/* Diagnostic Text */}
       <div className="text-xs text-gray-500 font-mono">
-        src/features/admin/components/sections/recipe/MasterIngredientList/EditIngredientModal/AllergenSection.tsx
+        {diagnosticPath}
       </div>
 
       <div className="flex items-start gap-3 bg-yellow-500/10 rounded-lg p-4 mb-4">
@@ -81,7 +85,7 @@ export const AllergenSection: React.FC<AllergenSectionProps> = ({
                 className="form-checkbox rounded bg-gray-700 border-gray-600 text-red-500 focus:ring-red-500"
               />
               <AllergenBadge 
-                type={key}
+                type={key as AllergenType}
                 showLabel 
                 className="group-hover:scale-105 transition-transform"
               />
@@ -103,7 +107,7 @@ export const AllergenSection: React.FC<AllergenSectionProps> = ({
                 className="form-checkbox rounded bg-gray-700 border-gray-600 text-yellow-500 focus:ring-yellow-500"
               />
               <AllergenBadge 
-                type={key}
+                type={key as AllergenType}
                 showLabel 
                 className="group-hover:scale-105 transition-transform"
               />
@@ -125,7 +129,7 @@ export const AllergenSection: React.FC<AllergenSectionProps> = ({
                 className="form-checkbox rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500"
               />
               <AllergenBadge 
-                type={key}
+                type={key as AllergenType}
                 showLabel 
                 className="group-hover:scale-105 transition-transform"
               />
@@ -143,10 +147,10 @@ export const AllergenSection: React.FC<AllergenSectionProps> = ({
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={formData[`allergenCustom${index}Active` as keyof MasterIngredient] as boolean}
+                  checked={formData[`allergen_custom${index}_active` as keyof MasterIngredient] as boolean}
                   onChange={(e) => onChange({
                     ...formData,
-                    [`allergenCustom${index}Active`]: e.target.checked
+                    [`allergen_custom${index}_active`]: e.target.checked
                   })}
                   className="form-checkbox rounded bg-gray-700 border-gray-600 text-primary-500 focus:ring-primary-500"
                 />
@@ -154,14 +158,14 @@ export const AllergenSection: React.FC<AllergenSectionProps> = ({
               </label>
               <input
                 type="text"
-                value={formData[`allergenCustom${index}Name` as keyof MasterIngredient] as string || ''}
+                value={formData[`allergen_custom${index}_name` as keyof MasterIngredient] as string || ''}
                 onChange={(e) => onChange({
                   ...formData,
-                  [`allergenCustom${index}Name`]: e.target.value
+                  [`allergen_custom${index}_name`]: e.target.value
                 })}
                 placeholder="Enter allergen name"
                 className="input flex-1 text-sm"
-                disabled={!formData[`allergenCustom${index}Active` as keyof MasterIngredient]}
+                disabled={!formData[`allergen_custom${index}_active` as keyof MasterIngredient]}
               />
             </div>
           </div>
@@ -174,10 +178,10 @@ export const AllergenSection: React.FC<AllergenSectionProps> = ({
           Allergen Notes
         </label>
         <textarea
-          value={formData.allergenNotes || ''}
+          value={formData.allergen_notes || ''}
           onChange={(e) => onChange({
             ...formData,
-            allergenNotes: e.target.value
+            allergen_notes: e.target.value
           })}
           className="input w-full h-24"
           placeholder="Enter any additional allergen information or handling requirements..."
