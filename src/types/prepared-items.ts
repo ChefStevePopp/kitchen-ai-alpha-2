@@ -1,5 +1,5 @@
 export interface PreparedItem {
-  id: string;
+  id?: string;
   itemId: string;
   category: string;
   product: string;
@@ -9,8 +9,8 @@ export interface PreparedItem {
   container: string;
   containerType: string;
   shelfLife: string;
-  recipeUnit: string; // Recipe unit measurement
-  costPerRecipeUnit: number; // Cost per recipe unit
+  recipeUnit: string;
+  costPerRecipeUnit: number;
   yieldPercent: number;
   finalCost: number;
   allergens: Record<string, boolean>;
