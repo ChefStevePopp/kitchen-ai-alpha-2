@@ -62,47 +62,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchOrganization = async (userId: string) => {
     try {
+      // First try to get org from user metadata
+      let orgId = user?.user_metadata?.organizationId;
+      
+      // If not found, try to get from organization_roles
+      if (!orgId) {
+        const { data: orgRole } = await supabase
+          .from('organization_roles')
+          .select('organization_id')
+          .eq('user_id', userId)
+          .single();
+          
+        orgId = orgRole?.organization_id;
+      }
+      
+      if (!orgId) {
+        throw new Error('No organization ID found');
+      }
+
       const { data, error } = await supabase
         .from('organizations')
         .select('*')
-        .eq('owner_id', userId)
+        .eq('id', orgId)
         .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No organization found, create one
-          const { data: newOrg, error: createError } = await supabase
-            .from('organizations')
-            .insert({
-              name: `${user?.email?.split('@')[0]}'s Organization`,
-              owner_id: userId,
-              settings: {
-                business_type: 'restaurant',
-                default_timezone: 'America/Toronto',
-                multi_unit: false,
-                currency: 'CAD',
-                date_format: 'MM/DD/YYYY',
-                time_format: '12h'
-              }
-            })
-            .select()
-            .single();
-
-          if (createError) throw createError;
-          setOrganization(newOrg);
-        } else {
-          throw error;
-        }
-      } else {
-        setOrganization(data);
+      if (error) throw error;
+      
+      // Initialize empty settings if none exist
+      if (!data.settings) {
+        data.settings = {
+          business_type: 'restaurant',
+          default_timezone: 'America/Toronto',
+          multi_unit: false,
+          currency: 'CAD',
+          date_format: 'MM/DD/YYYY',
+          time_format: '12h'
+        };
       }
+      
+      setOrganization(data);
     } catch (error) {
-      console.error('Error fetching organization:', error);
-      toast.error('Failed to load organization');
+      console.error('Error loading organization:', error);
+      toast.error('Failed to load organization settings');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const isDev = Boolean(
+    user?.user_metadata?.system_role === 'dev' ||
+    user?.user_metadata?.role === 'dev'
+  );
+
+  const hasAdminAccess = Boolean(
+    isDev ||
+    user?.user_metadata?.role === 'owner' ||
+    user?.user_metadata?.role === 'admin'
+  );
 
   const signOut = async () => {
     try {
@@ -118,17 +134,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.error('Failed to sign out');
     }
   };
-
-  const isDev = Boolean(
-    user?.user_metadata?.system_role === 'dev' ||
-    user?.user_metadata?.role === 'dev'
-  );
-
-  const hasAdminAccess = Boolean(
-    isDev ||
-    user?.user_metadata?.role === 'owner' ||
-    user?.user_metadata?.role === 'admin'
-  );
 
   if (isLoading) {
     return (
