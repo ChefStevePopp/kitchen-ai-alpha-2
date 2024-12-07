@@ -1,90 +1,135 @@
-import { utils, writeFile } from 'xlsx';
+import { type MasterIngredient } from '@/types/master-ingredient';
+import { supabase } from '@/lib/supabase';
 
-export function generateMasterIngredientsTemplate() {
-  // Create headers
-  const headers = [
-    'Item Code',
-    'Product Name',
-    'Major Group',
-    'Category',
-    'Sub-Category',
-    'Vendor',
-    'Case Size',
-    'Units/Case',
-    'Case Price',
-    'Unit of Measure',
-    'Recipe Units/Case',
-    'Recipe Unit Type',
-    'Yield %',
-    'Storage Area'
-  ];
+// Map Excel column headers to database column names
+export const ALLERGEN_MAPPING = {
+  'Peanut': 'allergen_peanut',
+  'Crustacean': 'allergen_crustacean',
+  'Tree Nut': 'allergen_treenut',
+  'Shellfish': 'allergen_shellfish',
+  'Sesame': 'allergen_sesame',
+  'Soy': 'allergen_soy',
+  'Fish': 'allergen_fish',
+  'Wheat': 'allergen_wheat',
+  'Milk': 'allergen_milk',
+  'Sulphite': 'allergen_sulphite',
+  'Egg': 'allergen_egg',
+  'Gluten': 'allergen_gluten',
+  'Mustard': 'allergen_mustard',
+  'Celery': 'allergen_celery',
+  'Garlic': 'allergen_garlic',
+  'Onion': 'allergen_onion',
+  'Nitrite': 'allergen_nitrite',
+  'Mushroom': 'allergen_mushroom',
+  'Hot Pepper': 'allergen_hot_pepper',
+  'Citrus': 'allergen_citrus',
+  'Pork': 'allergen_pork'
+} as const;
 
-  // Create example data
-  const exampleData = [
-    ['BEEF-001', 'Beef Brisket', 'Food', 'Proteins', 'Beef', 'US Foods', '2x5kg', '2', '125.99', 'kg', '10', 'portion', '85', 'Walk-in Cooler'],
-    ['CHIX-001', 'Chicken Breast', 'Food', 'Proteins', 'Poultry', 'Sysco', '4x2kg', '4', '89.99', 'kg', '8', 'portion', '90', 'Walk-in Cooler'],
-    ['MILK-001', 'Whole Milk', 'Food', 'Dairy', 'Milk', 'GFS', '4L', '1', '6.99', 'L', '16', 'cup', '100', 'Walk-in Cooler']
-  ];
+// Required columns for import
+export const REQUIRED_COLUMNS = [
+  'Item Code',
+  'Product Name',
+  'Major Group',
+  'Category',
+  'Sub-Category',
+  'Vendor',
+  'Case Size',
+  'Units/Case',
+  'Case Price',
+  'Unit of Measure',
+  'Recipe Units/Case',
+  'Recipe Unit Type',
+  'Yield %',
+  'Storage Area'
+] as const;
 
-  // Create workbook
-  const wb = utils.book_new();
+export async function validateMasterIngredients(data: any[], organizationId: string): Promise<Omit<MasterIngredient, 'id'> & { organization_id: string }[]> {
+  if (!Array.isArray(data)) {
+    throw new Error('Invalid data format: Expected an array');
+  }
 
-  // Create main data sheet
-  const ws = utils.aoa_to_sheet([headers, ...exampleData]);
+  const firstRow = data[0];
+  if (!firstRow || typeof firstRow !== 'object') {
+    throw new Error('Invalid data format: No valid rows found');
+  }
 
-  // Add column widths
-  ws['!cols'] = [
-    { wch: 12 }, // Item Code
-    { wch: 25 }, // Product Name
-    { wch: 15 }, // Major Group
-    { wch: 15 }, // Category
-    { wch: 15 }, // Sub-Category
-    { wch: 15 }, // Vendor
-    { wch: 12 }, // Case Size
-    { wch: 12 }, // Units/Case
-    { wch: 12 }, // Case Price
-    { wch: 15 }, // Unit of Measure
-    { wch: 15 }, // Recipe Units/Case
-    { wch: 15 }, // Recipe Unit Type
-    { wch: 10 }, // Yield %
-    { wch: 15 }, // Storage Area
-  ];
+  // Check for missing required columns
+  const missingColumns = REQUIRED_COLUMNS.filter(col => !(col in firstRow));
+  if (missingColumns.length > 0) {
+    throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+  }
 
-  // Add instructions sheet
-  const instructionsWs = utils.aoa_to_sheet([
-    ['Master Ingredients Import Template Instructions'],
-    [''],
-    ['Required Fields:'],
-    ['- Item Code: Unique identifier for the ingredient'],
-    ['- Product Name: Common name of the ingredient'],
-    ['- Major Group: Must match an existing food category group'],
-    ['- Category: Must match an existing category within the group'],
-    ['- Vendor: Supplier name'],
-    ['- Case Size: Size of purchase unit'],
-    ['- Units/Case: Number of units per case'],
-    ['- Case Price: Current price per case'],
-    ['- Unit of Measure: Base unit for inventory'],
-    [''],
-    ['Optional Fields:'],
-    ['- Sub-Category: Must match an existing sub-category within the category'],
-    ['- Recipe Units/Case: Number of recipe units per case'],
-    ['- Recipe Unit Type: Unit used in recipes'],
-    ['- Yield %: Usable percentage after waste'],
-    ['- Storage Area: Default storage location'],
-    [''],
-    ['Tips:'],
-    ['- Fill out one complete row as a reference'],
-    ['- Use consistent units and formatting'],
-    ['- Double-check all measurements'],
-    ['- Remove any empty rows before importing']
-  ]);
+  // Get food relationship IDs
+  const { data: groups } = await supabase
+    .from('food_category_groups')
+    .select('id, name')
+    .eq('organization_id', organizationId);
 
-  instructionsWs['!cols'] = [{ wch: 80 }];
+  const { data: categories } = await supabase
+    .from('food_categories')
+    .select('id, name, group_id')
+    .eq('organization_id', organizationId);
 
-  // Add sheets to workbook
-  utils.book_append_sheet(wb, ws, 'Master Ingredients');
-  utils.book_append_sheet(wb, instructionsWs, 'Instructions');
+  const { data: subCategories } = await supabase
+    .from('food_sub_categories')
+    .select('id, name, category_id')
+    .eq('organization_id', organizationId);
 
-  // Save file
-  writeFile(wb, 'master-ingredients-template.xlsx');
+  // Create lookup maps
+  const groupMap = new Map(groups?.map(g => [g.name.toLowerCase(), g.id]) || []);
+  const categoryMap = new Map(categories?.map(c => [c.name.toLowerCase(), c.id]) || []);
+  const subCategoryMap = new Map(subCategories?.map(s => [s.name.toLowerCase(), s.id]) || []);
+
+  return data
+    .filter(row => {
+      const productName = row['Product Name']?.toString().trim();
+      const itemCode = row['Item Code']?.toString().trim();
+      return productName && itemCode && productName !== '0' && itemCode !== '0';
+    })
+    .map(row => {
+      // Get UUIDs for food relationships
+      const majorGroupName = row['Major Group']?.toString().trim().toLowerCase();
+      const categoryName = row['Category']?.toString().trim().toLowerCase();
+      const subCategoryName = row['Sub-Category']?.toString().trim().toLowerCase();
+
+      const majorGroupId = groupMap.get(majorGroupName);
+      const categoryId = categoryMap.get(categoryName);
+      const subCategoryId = subCategoryMap.get(subCategoryName);
+
+      // Process allergens
+      const allergens = Object.entries(ALLERGEN_MAPPING).reduce((acc, [excelName, dbColumn]) => {
+        const value = row[excelName]?.toString().trim();
+        acc[dbColumn] = value === '1' || value === 'true';
+        return acc;
+      }, {} as Record<string, boolean>);
+
+      return {
+        organization_id: organizationId,
+        item_code: row['Item Code']?.toString().trim() || '',
+        major_group: majorGroupId || null,
+        category: categoryId || null,
+        sub_category: subCategoryId || null,
+        product: row['Product Name']?.toString().trim() || '',
+        vendor: row['Vendor']?.toString().trim() || '',
+        case_size: row['Case Size']?.toString().trim() || '',
+        units_per_case: row['Units/Case']?.toString().trim() || '',
+        current_price: parseFloat(row['Case Price']?.toString().replace(/[$,]/g, '') || '0'),
+        unit_of_measure: row['Unit of Measure']?.toString().trim() || '',
+        recipe_unit_per_purchase_unit: parseFloat(row['Recipe Units/Case']?.toString() || '0'),
+        recipe_unit_type: row['Recipe Unit Type']?.toString().trim() || '',
+        yield_percent: parseFloat(row['Yield %']?.toString().replace(/%/g, '') || '100'),
+        image_url: row['Image URL']?.toString().trim() || '',
+        storage_area: row['Storage Area']?.toString().trim() || '',
+        ...allergens,
+        allergen_custom1_name: '',
+        allergen_custom1_active: false,
+        allergen_custom2_name: '',
+        allergen_custom2_active: false,
+        allergen_custom3_name: '',
+        allergen_custom3_active: false,
+        allergen_notes: '',
+        updated_at: new Date().toISOString()
+      };
+    });
 }
