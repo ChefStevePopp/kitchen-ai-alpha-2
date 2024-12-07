@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
 import { BasicInformation } from './BasicInformation';
 import { PurchaseUnits } from './PurchaseUnits';
 import { RecipeUnits } from './RecipeUnits';
 import { AllergenSection } from './AllergenSection';
 import { useOperationsStore } from '@/stores/operationsStore';
-import { useFoodRelationshipsStore } from '@/stores/foodRelationshipsStore';
+import { useMasterIngredientsStore } from '@/stores/masterIngredientsStore';
 import type { MasterIngredient } from '@/types/master-ingredient';
 import toast from 'react-hot-toast';
 
@@ -13,32 +13,28 @@ interface EditIngredientModalProps {
   isOpen: boolean;
   onClose: () => void;
   ingredient: MasterIngredient;
-  onSave: (id: string, updates: Partial<MasterIngredient>) => Promise<void>;
 }
 
 export const EditIngredientModal: React.FC<EditIngredientModalProps> = ({
   isOpen,
   onClose,
-  ingredient,
-  onSave
+  ingredient
 }) => {
   const [formData, setFormData] = useState<MasterIngredient>(ingredient);
   const [isSaving, setIsSaving] = useState(false);
   const { settings, fetchSettings } = useOperationsStore();
-  const { fetchGroups } = useFoodRelationshipsStore();
+  const { updateIngredient } = useMasterIngredientsStore();
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchSettings();
-    fetchGroups();
-  }, [fetchSettings, fetchGroups]);
+  }, [fetchSettings]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
     try {
-      await onSave(ingredient.id!, formData);
-      toast.success('Ingredient updated successfully');
+      await updateIngredient(ingredient.id!, formData);
       onClose();
     } catch (error) {
       console.error('Error updating ingredient:', error);
@@ -53,11 +49,6 @@ export const EditIngredientModal: React.FC<EditIngredientModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        {/* Diagnostic Text */}
-        <div className="text-xs text-gray-500 font-mono">
-          src/features/admin/components/sections/recipe/MasterIngredientList/EditIngredientModal/index.tsx
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="sticky top-0 bg-gray-900 p-6 border-b border-gray-800 flex justify-between items-center z-10">
             <h2 className="text-2xl font-bold text-white">Edit Master Ingredient</h2>
@@ -74,6 +65,7 @@ export const EditIngredientModal: React.FC<EditIngredientModalProps> = ({
                 disabled={isSaving}
                 className="btn-primary"
               >
+                <Save className="w-4 h-4 mr-2" />
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
