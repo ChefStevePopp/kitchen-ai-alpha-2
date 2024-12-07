@@ -1,6 +1,5 @@
 import React from 'react';
 import { Package } from 'lucide-react';
-import { CategorySelector } from '@/components/CategorySelector';
 import type { MasterIngredient } from '@/types/master-ingredient';
 import type { OperationsSettings } from '@/types/operations';
 
@@ -17,6 +16,11 @@ export const BasicInformation: React.FC<BasicInformationProps> = ({
 }) => {
   return (
     <div className="space-y-4">
+      {/* Diagnostic Text */}
+      <div className="text-xs text-gray-500 font-mono">
+        src/features/admin/components/sections/recipe/MasterIngredientList/EditIngredientModal/BasicInformation.tsx
+      </div>
+
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
           <Package className="w-4 h-4 text-blue-400" />
@@ -27,14 +31,14 @@ export const BasicInformation: React.FC<BasicInformationProps> = ({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-400 mb-1">
-            Item Code
+            Vendor Code | Bar Code
           </label>
           <input
             type="text"
-            value={formData.item_code}
-            onChange={(e) => onChange({ ...formData, item_code: e.target.value })}
+            value={formData.itemCode}
+            onChange={(e) => onChange({ ...formData, itemCode: e.target.value })}
             className="input w-full"
-            required
+            placeholder="Enter vendor or bar code"
           />
         </div>
         <div>
@@ -51,15 +55,78 @@ export const BasicInformation: React.FC<BasicInformationProps> = ({
         </div>
       </div>
 
-      <CategorySelector
-        organizationId={formData.organization_id}
-        majorGroup={formData.major_group}
-        category={formData.category}
-        subCategory={formData.sub_category}
-        onMajorGroupChange={(id) => onChange({ ...formData, major_group: id, category: null, sub_category: null })}
-        onCategoryChange={(id) => onChange({ ...formData, category: id, sub_category: null })}
-        onSubCategoryChange={(id) => onChange({ ...formData, sub_category: id })}
-      />
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-400 mb-1">
+            Major Group
+          </label>
+          <select
+            value={formData.majorGroup || ''}
+            onChange={(e) => onChange({ 
+              ...formData, 
+              majorGroup: e.target.value,
+              category: '', // Reset lower levels when parent changes
+              subCategory: ''
+            })}
+            className="input w-full"
+            required
+          >
+            <option value="">Select major group...</option>
+            {settings?.food_category_groups?.map(group => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-400 mb-1">
+            Category
+          </label>
+          <select
+            value={formData.category || ''}
+            onChange={(e) => onChange({ 
+              ...formData, 
+              category: e.target.value,
+              subCategory: '' // Reset sub-category when category changes
+            })}
+            className="input w-full"
+            required
+            disabled={!formData.majorGroup}
+          >
+            <option value="">Select category...</option>
+            {settings?.food_categories
+              ?.filter(cat => cat.group_id === formData.majorGroup)
+              .map(category => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-400 mb-1">
+            Sub-Category
+          </label>
+          <select
+            value={formData.subCategory || ''}
+            onChange={(e) => onChange({ ...formData, subCategory: e.target.value })}
+            className="input w-full"
+            disabled={!formData.category}
+          >
+            <option value="">Select sub-category...</option>
+            {settings?.food_sub_categories
+              ?.filter(sub => sub.category_id === formData.category)
+              .map(subCategory => (
+                <option key={subCategory.id} value={subCategory.id}>
+                  {subCategory.name}
+                </option>
+              ))}
+          </select>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -83,8 +150,8 @@ export const BasicInformation: React.FC<BasicInformationProps> = ({
             Storage Area
           </label>
           <select
-            value={formData.storage_area}
-            onChange={(e) => onChange({ ...formData, storage_area: e.target.value })}
+            value={formData.storageArea}
+            onChange={(e) => onChange({ ...formData, storageArea: e.target.value })}
             className="input w-full"
             required
           >
