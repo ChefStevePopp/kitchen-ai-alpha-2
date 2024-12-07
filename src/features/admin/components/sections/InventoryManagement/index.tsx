@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Upload, Trash2, Download } from 'lucide-react';
+import { Package, Plus, Upload, Trash2 } from 'lucide-react';
 import { useInventoryStore } from '@/stores/inventoryStore';
 import { useMasterIngredientsStore } from '@/stores/masterIngredientsStore';
-import { ExcelDataGrid } from '@/features/shared/components/ExcelDataGrid';
-import { ImportExcelModal } from '@/features/admin/components/ImportExcelModal';
-import { WelcomeScreen } from './WelcomeScreen';
-import { CategoryStats } from './CategoryStats';
-import { inventoryColumns } from './columns';
 import { LoadingLogo } from '@/features/shared/components';
-import { generateInventoryTemplate } from '@/utils/excel';
+import { InventoryDataGrid } from './InventoryDataGrid';
+import { ImportExcelModal } from './ImportExcelModal';
 import toast from 'react-hot-toast';
 
 export const InventoryManagement: React.FC = () => {
@@ -53,7 +49,7 @@ export const InventoryManagement: React.FC = () => {
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
-        toast.error('Failed to import data');
+        toast.error('Failed to import inventory data');
       }
     }
   };
@@ -67,16 +63,6 @@ export const InventoryManagement: React.FC = () => {
       await clearItems();
     } catch (error) {
       toast.error('Failed to clear inventory data');
-    }
-  };
-
-  const handleDownloadTemplate = () => {
-    try {
-      generateInventoryTemplate();
-      toast.success('Template downloaded successfully');
-    } catch (error) {
-      console.error('Error generating template:', error);
-      toast.error('Failed to generate template');
     }
   };
 
@@ -108,31 +94,19 @@ export const InventoryManagement: React.FC = () => {
     );
   }
 
-  // Show welcome screen if no items exist
-  if (!items || items.length === 0) {
-    return (
-      <WelcomeScreen 
-        onImport={() => setIsImportModalOpen(true)}
-        onDownloadTemplate={handleDownloadTemplate}
-      />
-    );
-  }
-
   return (
     <div className="space-y-6">
+      {/* Diagnostic Text */}
+      <div className="text-xs text-gray-500 font-mono">
+        src/features/admin/components/sections/InventoryManagement/index.tsx
+      </div>
+
       <header className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Food Inventory</h1>
-          <p className="text-gray-400">Track and manage your current inventory levels</p>
+          <p className="text-gray-400">Manage your inventory counts and stock levels</p>
         </div>
         <div className="flex gap-4">
-          <button
-            onClick={handleDownloadTemplate}
-            className="btn-ghost text-amber-400 hover:text-amber-300"
-          >
-            <Download className="w-5 h-5 mr-2" />
-            Download Template
-          </button>
           <button
             onClick={handleClearData}
             className="btn-ghost text-red-400 hover:text-red-300"
@@ -143,27 +117,26 @@ export const InventoryManagement: React.FC = () => {
           </button>
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="btn-primary bg-amber-500 hover:bg-amber-600"
+            className="btn-primary"
           >
             <Upload className="w-5 h-5 mr-2" />
-            Import Excel
+            Import Excel Data
+          </button>
+          <button
+            onClick={() => {}}
+            className="btn-primary"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add Count
           </button>
         </div>
       </header>
 
-      <CategoryStats
-        masterIngredients={masterIngredients}
-        selectedCategories={[]}
-        onToggleCategory={() => {}}
-      />
-
       <div className="card p-6">
-        <ExcelDataGrid
-          columns={inventoryColumns}
+        <InventoryDataGrid 
           data={items}
           categoryFilter={categoryFilter}
           onCategoryChange={setCategoryFilter}
-          type="inventory"
         />
       </div>
 
