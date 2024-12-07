@@ -1,10 +1,11 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { AllergenBadge } from '../AllergenBadge';
+import { getAllergensByCategory } from '../../constants';
 import type { MasterIngredient } from '@/types/master-ingredient';
 
 interface AllergenSelectorProps {
-  ingredient: Partial<MasterIngredient>;
+  ingredient: MasterIngredient;
   onChange: (updates: Partial<MasterIngredient>) => void;
   className?: string;
 }
@@ -23,42 +24,36 @@ export const AllergenSelector: React.FC<AllergenSelectorProps> = ({
 
   // Group allergens by severity
   const highPriorityAllergens = [
-    { key: 'peanut', active: ingredient.allergenPeanut || false },
-    { key: 'crustacean', active: ingredient.allergenCrustacean || false },
-    { key: 'treenut', active: ingredient.allergenTreenut || false },
-    { key: 'shellfish', active: ingredient.allergenShellfish || false },
-    { key: 'sesame', active: ingredient.allergenSesame || false }
+    { key: 'peanut', active: ingredient.allergenPeanut },
+    { key: 'crustacean', active: ingredient.allergenCrustacean },
+    { key: 'treenut', active: ingredient.allergenTreenut },
+    { key: 'shellfish', active: ingredient.allergenShellfish },
+    { key: 'sesame', active: ingredient.allergenSesame }
   ];
 
   const mediumPriorityAllergens = [
-    { key: 'soy', active: ingredient.allergenSoy || false },
-    { key: 'fish', active: ingredient.allergenFish || false },
-    { key: 'wheat', active: ingredient.allergenWheat || false },
-    { key: 'milk', active: ingredient.allergenMilk || false },
-    { key: 'sulphite', active: ingredient.allergenSulphite || false },
-    { key: 'egg', active: ingredient.allergenEgg || false },
-    { key: 'gluten', active: ingredient.allergenGluten || false },
-    { key: 'mustard', active: ingredient.allergenMustard || false },
-    { key: 'pork', active: ingredient.allergenPork || false }
+    { key: 'soy', active: ingredient.allergenSoy },
+    { key: 'wheat', active: ingredient.allergenWheat },
+    { key: 'milk', active: ingredient.allergenMilk },
+    { key: 'sulphite', active: ingredient.allergenSulphite },
+    { key: 'egg', active: ingredient.allergenEgg },
+    { key: 'gluten', active: ingredient.allergenGluten },
+    { key: 'mustard', active: ingredient.allergenMustard },
+    { key: 'pork', active: ingredient.allergenPork }
   ];
 
   const lowPriorityAllergens = [
-    { key: 'celery', active: ingredient.allergenCelery || false },
-    { key: 'garlic', active: ingredient.allergenGarlic || false },
-    { key: 'onion', active: ingredient.allergenOnion || false },
-    { key: 'nitrite', active: ingredient.allergenNitrite || false },
-    { key: 'mushroom', active: ingredient.allergenMushroom || false },
-    { key: 'hotPepper', active: ingredient.allergenHotPepper || false },
-    { key: 'citrus', active: ingredient.allergenCitrus || false }
+    { key: 'celery', active: ingredient.allergenCelery },
+    { key: 'garlic', active: ingredient.allergenGarlic },
+    { key: 'onion', active: ingredient.allergenOnion },
+    { key: 'nitrite', active: ingredient.allergenNitrite },
+    { key: 'mushroom', active: ingredient.allergenMushroom },
+    { key: 'hotPepper', active: ingredient.allergenHotPepper },
+    { key: 'citrus', active: ingredient.allergenCitrus }
   ];
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Diagnostic Text */}
-      <div className="text-xs text-gray-500 font-mono">
-        src/features/allergens/components/AllergenSelector/index.tsx
-      </div>
-
       <div className="flex items-start gap-3 bg-yellow-500/10 rounded-lg p-4 mb-4">
         <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
         <div>
@@ -133,53 +128,6 @@ export const AllergenSelector: React.FC<AllergenSelectorProps> = ({
             </label>
           ))}
         </div>
-      </div>
-
-      {/* Custom Allergens */}
-      <div className="space-y-4">
-        <h4 className="text-sm font-medium text-white">Custom Allergens</h4>
-        {[1, 2, 3].map(index => (
-          <div key={index} className="space-y-2">
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={ingredient[`allergenCustom${index}Active` as keyof MasterIngredient] as boolean || false}
-                  onChange={(e) => onChange({
-                    [`allergenCustom${index}Active`]: e.target.checked
-                  })}
-                  className="form-checkbox rounded bg-gray-700 border-gray-600 text-primary-500 focus:ring-primary-500"
-                />
-                <span className="text-sm text-gray-300">Custom Allergen {index}</span>
-              </label>
-              <input
-                type="text"
-                value={ingredient[`allergenCustom${index}Name` as keyof MasterIngredient] as string || ''}
-                onChange={(e) => onChange({
-                  [`allergenCustom${index}Name`]: e.target.value
-                })}
-                placeholder="Enter allergen name"
-                className="input flex-1 text-sm"
-                disabled={!ingredient[`allergenCustom${index}Active` as keyof MasterIngredient]}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Allergen Notes */}
-      <div>
-        <label className="block text-sm font-medium text-gray-400 mb-2">
-          Allergen Notes
-        </label>
-        <textarea
-          value={ingredient.allergenNotes || ''}
-          onChange={(e) => onChange({
-            allergenNotes: e.target.value
-          })}
-          className="input w-full h-24"
-          placeholder="Enter any additional allergen information or handling requirements..."
-        />
       </div>
     </div>
   );
