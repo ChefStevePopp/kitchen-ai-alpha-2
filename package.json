@@ -23,7 +23,8 @@
     "xlsx": "^0.18.5",
     "zustand": "^4.5.1",
     "lru-cache": "^10.2.0",
-    "@floating-ui/react": "^0.26.9"
+    "@floating-ui/react": "^0.26.9",
+    "jspdf": "^2.5.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.16",
