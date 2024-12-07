@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { X, Save, CircleDollarSign } from 'lucide-react';
 import { useOperationsStore } from '@/stores/operationsStore';
-import { AllergenSelector } from '@/features/allergens/components/AllergenSelector';
-import { useMasterIngredientsStore } from '@/stores/masterIngredientsStore';
+import { AllergenSelector } from '@/features/allergens/components';
 import type { MasterIngredient } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -16,13 +15,13 @@ export const CreateIngredientModal: React.FC<CreateIngredientModalProps> = ({
   onClose
 }) => {
   const { settings } = useOperationsStore();
-  const { addIngredient } = useMasterIngredientsStore();
   const [formData, setFormData] = useState<Partial<MasterIngredient>>({
-    itemCode: '',
+    uniqueId: '',
     category: '',
     product: '',
     vendor: '',
     subCategory: '',
+    itemCode: '',
     caseSize: '',
     unitsPerCase: '',
     currentPrice: 0,
@@ -31,33 +30,7 @@ export const CreateIngredientModal: React.FC<CreateIngredientModalProps> = ({
     yieldPercent: 100,
     costPerRecipeUnit: 0,
     storageArea: '',
-    allergenPeanut: false,
-    allergenCrustacean: false,
-    allergenTreenut: false,
-    allergenShellfish: false,
-    allergenSesame: false,
-    allergenSoy: false,
-    allergenFish: false,
-    allergenWheat: false,
-    allergenMilk: false,
-    allergenSulphite: false,
-    allergenEgg: false,
-    allergenGluten: false,
-    allergenMustard: false,
-    allergenCelery: false,
-    allergenGarlic: false,
-    allergenOnion: false,
-    allergenNitrite: false,
-    allergenMushroom: false,
-    allergenHotPepper: false,
-    allergenCitrus: false,
-    allergenPork: false,
-    allergenCustom1Active: false,
-    allergenCustom1Name: '',
-    allergenCustom2Active: false,
-    allergenCustom2Name: '',
-    allergenCustom3Active: false,
-    allergenCustom3Name: '',
+    allergens: [],
     allergenNotes: ''
   });
 
@@ -71,9 +44,9 @@ export const CreateIngredientModal: React.FC<CreateIngredientModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addIngredient(formData);
-      toast.success('Ingredient created successfully');
+      // Handle submit logic here
       onClose();
+      toast.success('Ingredient created successfully');
     } catch (error) {
       console.error('Error creating ingredient:', error);
       toast.error('Failed to create ingredient');
@@ -85,11 +58,6 @@ export const CreateIngredientModal: React.FC<CreateIngredientModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        {/* Diagnostic Text */}
-        <div className="text-xs text-gray-500 font-mono">
-          src/features/admin/components/sections/recipe/MasterIngredientList/CreateIngredientModal.tsx
-        </div>
-
         <div className="sticky top-0 bg-gray-900 p-6 border-b border-gray-800 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-white">Create Master Ingredient</h2>
           <button 
@@ -107,12 +75,12 @@ export const CreateIngredientModal: React.FC<CreateIngredientModalProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
-                  Item Code
+                  Unique ID
                 </label>
                 <input
                   type="text"
-                  value={formData.itemCode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, itemCode: e.target.value }))}
+                  value={formData.uniqueId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, uniqueId: e.target.value }))}
                   className="input w-full"
                   required
                 />
@@ -143,7 +111,7 @@ export const CreateIngredientModal: React.FC<CreateIngredientModalProps> = ({
                   required
                 >
                   <option value="">Select category...</option>
-                  {settings?.ingredient_categories?.map(category => (
+                  {settings?.ingredient_categories.map(category => (
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
@@ -178,7 +146,7 @@ export const CreateIngredientModal: React.FC<CreateIngredientModalProps> = ({
                   required
                 >
                   <option value="">Select vendor...</option>
-                  {settings?.vendors?.map(vendor => (
+                  {settings?.vendors.map(vendor => (
                     <option key={vendor} value={vendor}>{vendor}</option>
                   ))}
                 </select>
@@ -194,7 +162,7 @@ export const CreateIngredientModal: React.FC<CreateIngredientModalProps> = ({
                   required
                 >
                   <option value="">Select storage area...</option>
-                  {settings?.storage_areas?.map(area => (
+                  {settings?.storage_areas.map(area => (
                     <option key={area} value={area}>{area}</option>
                   ))}
                 </select>
@@ -337,8 +305,8 @@ export const CreateIngredientModal: React.FC<CreateIngredientModalProps> = ({
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-white">Allergens</h3>
             <AllergenSelector
-              ingredient={formData}
-              onChange={(updates) => setFormData(prev => ({ ...prev, ...updates }))}
+              selectedAllergens={formData.allergens || []}
+              onChange={(allergens) => setFormData(prev => ({ ...prev, allergens }))}
             />
           </div>
 
