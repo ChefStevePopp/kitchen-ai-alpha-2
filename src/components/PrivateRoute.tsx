@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/config/routes';
 import { LoadingLogo } from '@/features/shared/components';
 
@@ -9,7 +9,7 @@ interface PrivateRouteProps {
 }
 
 export const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -21,6 +21,7 @@ export const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   }
 
   if (!user) {
+    // Save the attempted URL to redirect back after login
     return <Navigate to={ROUTES.AUTH.SIGN_IN} state={{ from: location }} replace />;
   }
 
